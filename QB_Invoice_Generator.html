@@ -780,8 +780,21 @@ function generateInner() {
   logSection('summary', 'summary', '≡', 'Revenue Summary — ' + month);
   logMsg('<div class="summary-grid"><div class="summary-item">Commission <span>' + fmt(totalCommission) + '</span></div><div class="summary-item">Monthly Fees <span>' + fmt(totalFees) + '</span></div><div class="summary-item">Rental (' + matchedRentalClients + ' clients) <span>' + fmt(totalRentalOut) + '</span></div><div class="summary-item">HQ Services (' + matchedHQClients + ' clients) <span>' + fmt(totalHQOut) + '</span></div><div class="summary-item">Ads (' + matchedAdsClients + ' clients) <span>' + fmt(totalAdsOut) + '</span></div><div class="summary-total"><span>Grand Total</span><span>' + fmt(grandTotal) + '</span></div></div>', 'summary', 'summary');
 
+  // Flag first-month clients
+  const previousClients = new Set(
+    parseCSV(data.client)
+      .filter(r => (r['Month'] || '').trim() !== month.trim())
+      .map(r => normName(r['f'] || ''))
+      .filter(Boolean)
+  );
+  filtered.forEach(r => {
+    const customer = (r['f'] || '').trim();
+    if (customer && !previousClients.has(normName(customer))) {
+      manualActions.push(customer + ': first month — might need to add Campaign Verify line item in QB');
+    }
+  });
+
   if (manualActions.length) {
-    
     manualActions.forEach(a => logMsg(a, 'action', 'action'));
   }
 
