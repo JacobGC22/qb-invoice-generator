@@ -510,8 +510,8 @@ function generateInner() {
 
   const clientData = parseCSV(data.client);
   const filtered = clientData.filter(r => (r['Month'] || '').trim() === month.trim());
-  dlog('clientData rows: ' + clientData.length + ' filtered: ' + filtered.length + ' rentalData: ' + rentalData.length + ' hqData: ' + hqData.length + ' adsData: ' + adsData.length);
   if (clientData.length > 0) dlog('Sample month value from sheet: [' + (clientData[0]['Month'] || 'N/A') + '] char codes: ' + Array.from(clientData[0]['Month'] || '').map(c=>c.charCodeAt(0)).join(','));
+  dlog('clientData rows: ' + clientData.length + ' filtered: ' + filtered.length);
   if (!filtered.length) { logMsg('No rows found for "' + month + '" in Client Billing Archive. Check the month format.', 'err'); renderLog(); return; }
 
   // Duplicate client detection in Client Billing Archive for this month
