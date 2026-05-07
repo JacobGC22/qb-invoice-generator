@@ -56,39 +56,33 @@ hr { border: none; border-top: 1px solid #e0e0dc; margin: 1.25rem 0; }
   <h1>QB invoice generator</h1>
   <p class="sub">Upload your CSVs, confirm the month and dates, then download your QB-ready file.</p>
 
-  <div class="uploads">
-    <div class="upload-box" onclick="document.getElementById('f-client').click()" id="box-client">
+  <input type="file" id="f-all" accept=".csv" multiple style="display:none" onchange="loadAllFiles(this)">
+  <button class="btn" onclick="document.getElementById('f-all').click()" style="margin-bottom:1rem;background:#1a1a1a;color:white;">Select all CSV files</button>
+  
+  <div class="uploads" id="fileStatus">
+    <div class="upload-box" id="box-client">
       <div class="ub-label" id="lbl-client">Client billing archive</div>
-      <div class="ub-name" id="name-client">Click to upload</div>
-      <input type="file" id="f-client" accept=".csv" onchange="loadFile('client',this)">
+      <div class="ub-name" id="name-client">Not loaded</div>
     </div>
-    <div class="upload-box" onclick="document.getElementById('f-rental').click()" id="box-rental">
+    <div class="upload-box" id="box-rental">
       <div class="ub-label" id="lbl-rental">Rental billing archive</div>
-      <div class="ub-name" id="name-rental">Click to upload</div>
-      <input type="file" id="f-rental" accept=".csv" onchange="loadFile('rental',this)">
+      <div class="ub-name" id="name-rental">Not loaded</div>
     </div>
-    <div class="upload-box" onclick="document.getElementById('f-hq').click()" id="box-hq">
+    <div class="upload-box" id="box-hq">
       <div class="ub-label" id="lbl-hq">HQ services archive</div>
-      <div class="ub-name" id="name-hq">Click to upload</div>
-      <input type="file" id="f-hq" accept=".csv" onchange="loadFile('hq',this)">
+      <div class="ub-name" id="name-hq">Not loaded</div>
     </div>
-    <div class="upload-box" onclick="document.getElementById('f-ads').click()" id="box-ads">
+    <div class="upload-box" id="box-ads">
       <div class="ub-label" id="lbl-ads">Ads billing archive</div>
-      <div class="ub-name" id="name-ads">Click to upload</div>
-      <input type="file" id="f-ads" accept=".csv" onchange="loadFile('ads',this)">
+      <div class="ub-name" id="name-ads">Not loaded</div>
     </div>
-  </div>
-
-  <div class="uploads">
-    <div class="upload-box" onclick="document.getElementById('f-qb').click()" id="box-qb">
+    <div class="upload-box" id="box-qb">
       <div class="ub-label" id="lbl-qb">QB invoice list (auto invoice #)</div>
-      <div class="ub-name" id="name-qb">Click to upload</div>
-      <input type="file" id="f-qb" accept=".csv" onchange="loadFile('qb',this)">
+      <div class="ub-name" id="name-qb">Not loaded</div>
     </div>
-    <div class="upload-box" onclick="document.getElementById('f-config').click()" id="box-config">
+    <div class="upload-box" id="box-config">
       <div class="ub-label" id="lbl-config">Client config</div>
-      <div class="ub-name" id="name-config">Click to upload</div>
-      <input type="file" id="f-config" accept=".csv" onchange="loadFile('config',this)">
+      <div class="ub-name" id="name-config">Not loaded</div>
     </div>
   </div>
 
@@ -147,7 +141,7 @@ async function pushLogToGitHub(logContent) {
   try {
     const filename = 'diagnostic_logs/log_' + new Date().toISOString().replace(/[:.]/g, '-') + '.txt';
     const encoded = btoa(unescape(encodeURIComponent(logContent)));
-    await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + filename, {
+    const response = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + filename, {
       method: 'PUT',
       headers: {
         'Authorization': 'token ' + GITHUB_TOKEN,
@@ -158,7 +152,12 @@ async function pushLogToGitHub(logContent) {
         content: encoded
       })
     });
-    dlog('Diagnostic log pushed to GitHub: ' + filename);
+    const result = await response.json();
+    if (response.ok) {
+      dlog('Log pushed to GitHub successfully: ' + filename);
+    } else {
+      dlog('GitHub push FAILED: ' + response.status + ' ' + JSON.stringify(result));
+    }
   } catch(e) {
     dlog('Failed to push log to GitHub: ' + e.message);
   }
@@ -206,6 +205,47 @@ try {
 
 document.getElementById('genBtn').addEventListener('click', function() { generate(); });
 document.getElementById('copyBtn').addEventListener('click', function() { copyCSV(); });
+
+function detectFileKey(filename) {
+  const f = filename.toLowerCase();
+  if (f.includes('client_billing') || f.includes('client billing')) return 'client';
+  if (f.includes('rental')) return 'rental';
+  if (f.includes('hq')) return 'hq';
+  if (f.includes('ads')) return 'ads';
+  if (f.includes('invoice_list') || f.includes('invoice list')) return 'qb';
+  if (f.includes('config')) return 'config';
+  return null;
+}
+
+function loadAllFiles(input) {
+  const files = Array.from(input.files);
+  const unrecognized = [];
+  
+  files.forEach(file => {
+    const key = detectFileKey(file.name);
+    if (!key) {
+      unrecognized.push(file.name);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      data[key] = e.target.result;
+      document.getElementById('name-' + key).textContent = file.name;
+      document.getElementById('box-' + key).classList.add('loaded');
+      document.getElementById('lbl-' + key).classList.add('loaded');
+      if (key === 'qb') detectInvoiceNumber(e.target.result);
+      checkReady();
+    };
+    reader.onerror = e => {
+      alert('Error reading file ' + key + ': ' + e.target.error);
+    };
+    reader.readAsText(file);
+  });
+
+  if (unrecognized.length) {
+    alert('Could not identify these files (check filenames): ' + unrecognized.join(', '));
+  }
+}
 
 function loadFile(key, input) {
   const file = input.files[0];
