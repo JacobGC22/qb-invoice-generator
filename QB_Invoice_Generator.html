@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QB Invoice Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; padding: 2rem; }
+.wrap { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; padding: 2rem; border: 1px solid #e0e0dc; }
+h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.sub { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+.uploads { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+.upload-box { background: #f5f5f3; border: 1px solid #e0e0dc; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s; }
+.upload-box:hover { border-color: #aaa; }
+.upload-box.loaded { border-color: #22c55e; background: #f0fdf4; }
+.ub-label { font-size: 11px; color: #888; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ub-label.loaded { color: #16a34a; }
+.ub-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+input[type=file] { display: none; }
+label.field-label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+input[type=text], input[type=number] { width: 100%; border: 1px solid #e0e0dc; border-radius: 6px; padding: 8px 10px; font-size: 14px; background: white; color: #1a1a1a; }
+input[type=text]:focus, input[type=number]:focus { outline: none; border-color: #888; }
+.row { display: flex; gap: 12px; margin-bottom: 1rem; }
+.row .field { flex: 1; }
+.field { margin-bottom: 1rem; }
+.hint { font-size: 12px; color: #888; margin-top: 4px; }
+.hint.detected { color: #16a34a; }
+hr { border: none; border-top: 1px solid #e0e0dc; margin: 1.25rem 0; }
+.btn { width: 100%; padding: 10px; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 8px; border: 1px solid #e0e0dc; background: #1a1a1a; color: white; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-secondary { background: white; color: #1a1a1a; margin-top: 8px; display: none; }
+.log { margin-top: 1.5rem; display: none; }
+.log.show { display: block; }
+.log-section { margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0dc; }
+.log-section-header { padding: 8px 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.log-section-body { padding: 10px 14px; background: white; }
+.log-row { font-size: 13px; line-height: 1.7; padding: 2px 0; border-bottom: 0.5px solid #f0f0ee; }
+.log-row:last-child { border-bottom: none; }
+.section-info .log-section-header { background: #f0fdf4; color: #16a34a; }
+.section-warn .log-section-header { background: #fffbeb; color: #d97706; }
+.section-err .log-section-header { background: #fef2f2; color: #dc2626; }
+.section-action .log-section-header { background: #eff6ff; color: #2563eb; }
+.section-flag-over .log-section-header { background: #fdf4ff; color: #7c3aed; }
+.section-flag-close .log-section-header { background: #faf5ff; color: #9333ea; }
+.section-summary .log-section-header { background: #f8fafc; color: #334155; }
+.section-summary .log-section-body { background: #f8fafc; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.summary-item { font-size: 13px; color: #555; }
+.summary-item span { font-weight: 600; color: #1a1a1a; float: right; }
+.summary-total { grid-column: 1/-1; font-size: 14px; font-weight: 600; color: #1a1a1a; border-top: 1px solid #e0e0dc; padding-top: 8px; margin-top: 4px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>QB invoice generator</h1>
+  <p class="sub">Upload your CSVs, confirm the month and dates, then download your QB-ready file.</p>
+
+  <div class="uploads">
+    <div class="upload-box" onclick="document.getElementById('f-client').click()" id="box-client">
+      <div class="ub-label" id="lbl-client">Client billing archive</div>
+      <div class="ub-name" id="name-client">Click to upload</div>
+      <input type="file" id="f-client" accept=".csv" onchange="loadFile('client',this)">
+    </div>
+    <div class="upload-box" onclick="document.getElementById('f-rental').click()" id="box-rental">
+      <div class="ub-label" id="lbl-rental">Rental billing archive</div>
+      <div class="ub-name" id="name-rental">Click to upload</div>
+      <input type="file" id="f-rental" accept=".csv" onchange="loadFile('rental',this)">
+    </div>
+    <div class="upload-box" onclick="document.getElementById('f-hq').click()" id="box-hq">
+      <div class="ub-label" id="lbl-hq">HQ services archive</div>
+      <div class="ub-name" id="name-hq">Click to upload</div>
+      <input type="file" id="f-hq" accept=".csv" onchange="loadFile('hq',this)">
+    </div>
+    <div class="upload-box" onclick="document.getElementById('f-ads').click()" id="box-ads">
+      <div class="ub-label" id="lbl-ads">Ads billing archive</div>
+      <div class="ub-name" id="name-ads">Click to upload</div>
+      <input type="file" id="f-ads" accept=".csv" onchange="loadFile('ads',this)">
+    </div>
+  </div>
+
+  <div class="uploads">
+    <div class="upload-box" onclick="document.getElementById('f-qb').click()" id="box-qb">
+      <div class="ub-label" id="lbl-qb">QB invoice list (auto invoice #)</div>
+      <div class="ub-name" id="name-qb">Click to upload</div>
+      <input type="file" id="f-qb" accept=".csv" onchange="loadFile('qb',this)">
+    </div>
+    <div class="upload-box" onclick="document.getElementById('f-config').click()" id="box-config">
+      <div class="ub-label" id="lbl-config">Client config</div>
+      <div class="ub-name" id="name-config">Click to upload</div>
+      <input type="file" id="f-config" accept=".csv" onchange="loadFile('config',this)">
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="field">
+    <label class="field-label">Billing month (must match sheet exactly, e.g. "April '26")</label>
+    <input type="text" id="month" placeholder="April '26">
+  </div>
+
+  <div class="field">
+    <label class="field-label">Starting invoice number</label>
+    <input type="number" id="invStart" placeholder="Upload QB invoice list to auto-detect">
+    <div class="hint" id="invHint">Upload QB invoice list to auto-detect</div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label class="field-label">Invoice date (MM/DD/YYYY)</label>
+      <input type="text" id="invDate" placeholder="5/3/2026">
+    </div>
+    <div class="field">
+      <label class="field-label">Due date (MM/DD/YYYY)</label>
+      <input type="text" id="dueDate" placeholder="5/8/2026">
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="field-label">Terms</label>
+    <input type="text" id="terms" placeholder="Net 5" style="max-width:160px;">
+  </div>
+
+  <div id="uploadStatus" style="font-size:13px;margin-bottom:8px;color:#d97706;">Still needed: Client Billing, Rental Billing, HQ Services, Ads Billing</div>
+  <button class="btn" id="genBtn" disabled>Generate QB CSV</button>
+  <button class="btn btn-secondary" id="copyBtn">Copy CSV to clipboard</button>
+  <div class="log" id="log"></div>
+</div>
+
+<script src="QB_Invoice_Generator.js"></script>
+</body>
+</html>
