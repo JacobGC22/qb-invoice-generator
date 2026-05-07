@@ -1,0 +1,9 @@
+Client,Tier1Rate,Tier1Cap,Tier2Rate,ExcludeRentalRaised,NeedsTextingCost,NeedsCreditCard,Terms,ThresholdIsFlatFee,CommissionThreshold
+Mitchell Berman,0.15,20000,0.05,,,,,,
+VOT PAC,0.15,20000,0.05,,,,,,
+Donavan McKinney,0.15,,,yes,,,,,
+Kelly Cassidy,0.15,,,,,yes,,,
+Mike Halpin,0.15,,,,,yes,,,
+Nate Willems,0.15,,,,yes,,,,
+Hank Johnson,0.15,,,,,,Net 10,yes,
+Vikki Goodwin,0.15,25000,0.05,,,,,,
