@@ -864,7 +864,7 @@ function generateInner() {
   const csvContent = outputRows.map(csvRow).join('\n');
   lastCSV = csvContent;
 
-  const encoded = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+  const encoded = 'data:text/csv;charset=utf-8,%EF%BB%BF' + encodeURIComponent(csvContent);
   const a = document.createElement('a');
   a.href = encoded;
   a.download = 'QB_Invoices_' + month.replace(/'/g, '').replace(/ /g, '_') + '.csv';
