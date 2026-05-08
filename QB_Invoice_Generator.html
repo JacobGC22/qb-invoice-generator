@@ -200,7 +200,7 @@ function loadAllFiles(input) {
     reader.onerror = e => {
       alert('Error reading file ' + key + ': ' + e.target.error);
     };
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
   });
 
   if (unrecognized.length) {
@@ -223,7 +223,7 @@ function loadFile(key, input) {
   reader.onerror = e => {
     alert('Error reading file ' + key + ': ' + e.target.error);
   };
-  reader.readAsText(file);
+  reader.readAsText(file, 'UTF-8');
 }
 
 function detectInvoiceNumber(text) {
