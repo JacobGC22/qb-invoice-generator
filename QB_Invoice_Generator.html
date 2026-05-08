@@ -309,7 +309,7 @@ function normName(s) {
 }
 
 function stripAccents(s) {
-  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[‘’‚‛]/g, "'");
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 // Section-based log builder
