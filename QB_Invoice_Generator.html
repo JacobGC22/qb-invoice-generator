@@ -290,7 +290,7 @@ function parseCSV(text) {
   const headers = rows[0].map(h => h.replace(/^\uFEFF/, '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
   return rows.slice(1).map(r => {
     const obj = {};
-    headers.forEach((h, i) => obj[h] = (r[i] || '').trim());
+    headers.forEach((h, i) => obj[h] = fixEncoding((r[i] || '').trim()));
     return obj;
   });
 }
@@ -308,8 +308,19 @@ function normName(s) {
   return (s || '').toLowerCase().trim();
 }
 
+function fixEncoding(s) {
+  // Fix common UTF-8 characters misread as Latin-1
+  return (s || '')
+    .replace(/â/g, '’')  // â€™ -> '
+    .replace(/â/g, '‘')  // â€˜ -> '
+    .replace(/â/g, '“')  // â€œ -> "
+    .replace(/â/g, '”')  // â€ -> "
+    .replace(/â/g, '–')  // â€" -> –
+    .replace(/â/g, '—'); // â€" -> —
+}
+
 function stripAccents(s) {
-  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return fixEncoding((s || '').normalize('NFD').replace(/[̀-ͯ]/g, ''));
 }
 
 // Section-based log builder
