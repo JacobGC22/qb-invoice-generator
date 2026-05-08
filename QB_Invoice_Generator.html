@@ -691,7 +691,7 @@ function generateInner() {
     }
 
     const clientTerms = (config && config.Terms && config.Terms.trim()) ? config.Terms.trim() : terms;
-    const customerOut = stripAccents(customer);
+    const customerOut = stripAccents((config && config.CustomerName && config.CustomerName.trim()) ? config.CustomerName.trim() : customer);
 
     // Service date for commission/fee = 1st of previous month
     const invDateObj = new Date(invDate);
