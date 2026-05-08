@@ -607,6 +607,17 @@ function generateInner() {
       } else if (cells > 0) {
         hqByClient[client].push({ product: 'Cell Data Acquisition - HQ', qty: cells, rate: billRate, amount: costToClient, desc: 'Purchase of cells', date: getHQDate('Cell Data Acquisition - HQ') });
       }
+    } else if (product === 'Cell and Email Append') {
+      const emails = parseFloat((r['Emails'] || '0').replace(/,/g, '')) || 0;
+      const cells = parseFloat((r['Cells'] || '0').replace(/,/g, '')) || 0;
+      if (cells > 0) {
+        const cellAmt = parseFloat((cells * 0.05).toFixed(2));
+        hqByClient[client].push({ product: 'Cell Append - HQ', qty: cells, rate: 0.05, amount: cellAmt, desc: '', date: getHQDate('Cell Append - HQ') });
+      }
+      if (emails > 0) {
+        const emailAmt = parseFloat((emails * 0.08).toFixed(2));
+        hqByClient[client].push({ product: 'Email Append - HQ', qty: emails, rate: 0.08, amount: emailAmt, desc: '', date: getHQDate('Email Append - HQ') });
+      }
     } else {
       const emails = parseFloat((r['Emails'] || '0').replace(/,/g, '')) || 0;
       const cells = parseFloat((r['Cells'] || '0').replace(/,/g, '')) || 0;
@@ -704,13 +715,24 @@ function generateInner() {
     const clientTerms = (config && config.Terms && config.Terms.trim()) ? config.Terms.trim() : terms;
     const customerOut = stripAccents((config && config.CustomerName && config.CustomerName.trim()) ? config.CustomerName.trim() : customer);
 
+    // Calculate per-client due date based on their terms
+    let clientDueDate = dueDate;
+    const netMatch = clientTerms.match(/net\s*(\d+)/i);
+    if (netMatch) {
+      const netDays = parseInt(netMatch[1]);
+      const invDateObj2 = new Date(invDate);
+      const clientDue = new Date(invDateObj2);
+      clientDue.setDate(clientDue.getDate() + netDays);
+      clientDueDate = (clientDue.getMonth()+1) + '/' + clientDue.getDate() + '/' + clientDue.getFullYear();
+    }
+
     // Service date for commission/fee = 1st of previous month
     const invDateObj = new Date(invDate);
     const prevMonthFirst = new Date(invDateObj.getFullYear(), invDateObj.getMonth() - 1, 1);
     const prevMonthFirstStr = (prevMonthFirst.getMonth()+1) + '/1/' + prevMonthFirst.getFullYear();
 
     const addLine = (product, desc, qty, rate, amount, serviceDate) => {
-      outputRows.push([invoiceNum, customerOut, invDate, dueDate, clientTerms, '', memo, product, desc, qty, rate, amount, serviceDate || invDate]);
+      outputRows.push([invoiceNum, customerOut, invDate, clientDueDate, clientTerms, '', memo, product, desc, qty, rate, amount, serviceDate || invDate]);
     };
 
     // Commission lines
